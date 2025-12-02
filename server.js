@@ -1,39 +1,44 @@
-require("dotenv").config();
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
+import express from "express";
+import cors from "cors";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
 
-// Route imports
-const userRoutes = require("./routes/userRoutes");
-const taskRoutes = require("./routes/taskRoutes");
-const sessionRoutes = require("./routes/sessionRoutes");
-const syncRoutes = require("./routes/syncRoutes");
+import userRoutes from "./routes/userRoutes.js";
+import taskRoutes from "./routes/taskRoutes.js";
+import sessionRoutes from "./routes/sessionRoutes.js";
+import syncRoutes from "./routes/syncRoutes.js";
+
+dotenv.config();
 
 const app = express();
 
-// Body parser
-app.use(express.json({ limit: "10mb" }));
+// --------------------------------------
+// FIXED CORS — allows ALL Netlify domains
+// --------------------------------------
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
 
-// CORS — allow local dev + deployed frontend
-app.use(cors({
-  origin: [
-    "http://localhost:5173",                   // local dev
-    //"https://YOUR_NETLIFY_URL.netlify.app"    // frontend deploy (update later)
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
-}));
+      // allow localhost
+      if (origin.includes("localhost")) return callback(null, true);
 
-// MongoDB connection
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((e) => console.error("MongoDB connection error:", e));
+      // allow any netlify.app domain
+      if (origin.endsWith(".netlify.app")) return callback(null, true);
 
-// Test route
-app.get("/", (req, res) => {
-  res.json({ message: "API running 🚀" });
-});
+      console.log("CORS BLOCKED:", origin);
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+// preflight
+app.options("*", cors());
+
+app.use(express.json());
 
 // Routes
 app.use("/api/users", userRoutes);
@@ -41,6 +46,17 @@ app.use("/api/tasks", taskRoutes);
 app.use("/api/sessions", sessionRoutes);
 app.use("/api/sync", syncRoutes);
 
-// Start server
+// DB
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.log("MongoDB error", err));
+
+// root
+app.get("/", (req, res) => {
+  res.send("Momentum backend running");
+});
+
+// server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on ${PORT}`));
