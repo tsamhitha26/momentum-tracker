@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* animated gradient background */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradientShift 12s ease infinite;
+}
+
+/* base layout helpers */
+html,body,#root { height: 100%; }
+body {
+  @apply bg-gray-50 dark:bg-gray-900;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Poppins", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* subtle glass card style for reuse (component wrappers use backdrop-blur) */
+.glass {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255,255,255,0.28);
+  border-radius: 1rem;
+}
+
+/* accessibility: ensure focus outlines visible */
+:focus { outline: 3px solid rgba(99,102,241,0.24); outline-offset: 2px; }
+
+/* small utilities */
+.rounded-3xl { border-radius: 1rem; }
