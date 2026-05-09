@@ -1,9 +1,10 @@
 // src/utils/sync.js
+import { API_BASE_URL, parseJsonResponse } from "../api/config";
 
 //----------------------------------------------------------
 //  API BASE URL (Works on Netlify + Localhost)
 //----------------------------------------------------------
-export const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+export const API = API_BASE_URL;
 
 //----------------------------------------------------------
 //  STORAGE KEYS
@@ -69,8 +70,7 @@ export async function registerUser(username, password) {
     body: JSON.stringify({ username, password })
   });
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Registration failed");
+  const data = await parseJsonResponse(res, "Registration failed");
 
   setUser(data.user);
   setToken(data.token);
@@ -91,8 +91,7 @@ export async function loginUser(username, password) {
     body: JSON.stringify({ username, password })
   });
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Login failed");
+  const data = await parseJsonResponse(res, "Login failed");
 
   setUser(data.user);
   setToken(data.token);
@@ -132,8 +131,7 @@ export async function syncLocalToServer() {
     body: JSON.stringify({ tasks, sessions })
   });
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Sync failed");
+  const data = await parseJsonResponse(res, "Sync failed");
 
   // Server returns canonical merged lists
   localStorage.setItem(tasksKeyFor(user.id), JSON.stringify(data.tasks || []));

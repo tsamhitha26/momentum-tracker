@@ -1,39 +1,20 @@
-// src/components/FocusSummary.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { getUser, getUserSessions } from "../utils/sync";
-
-/**
- * FocusSummary (Hybrid Sync Version)
- * - Loads sessions from server if logged-in
- * - Falls back to local per-user sessions
- * - Shows Today, This Week, Streak
- * - Auto-refreshes when timer finishes or user logs in
- */
-
-function startOfDay(date = new Date()) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function startOfWeek(date = new Date()) {
-  const d = new Date(date);
-  const day = d.getDay(); // 0..6
-  const diff = (day + 6) % 7; // Monday = 0
-  d.setDate(d.getDate() - diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
+import { getUserSessions } from "../utils/sync";
+import { calculateProductivityMetrics } from "../utils/productivity";
+import {
+  loadPreferences,
+  PREFERENCES_UPDATED_EVENT,
+} from "../utils/preferences";
 
 export default function FocusSummary() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [preferences, setPreferences] = useState(loadPreferences);
 
-  /** Load sessions (Server → Local fallback) */
   async function loadSessions() {
     setLoading(true);
     try {
-      const list = await getUserSessions(); // ← unified logic from sync.js
+      const list = await getUserSessions();
       setSessions(Array.isArray(list) ? list : []);
     } catch {
       setSessions([]);
@@ -41,105 +22,92 @@ export default function FocusSummary() {
     setLoading(false);
   }
 
-  /** Load on mount */
   useEffect(() => {
     loadSessions();
 
     const refresh = () => loadSessions();
+    const refreshPreferences = () => setPreferences(loadPreferences());
+
     window.addEventListener("history-updated", refresh);
     window.addEventListener("user-changed", refresh);
+    window.addEventListener(PREFERENCES_UPDATED_EVENT, refreshPreferences);
 
     return () => {
       window.removeEventListener("history-updated", refresh);
       window.removeEventListener("user-changed", refresh);
+      window.removeEventListener(PREFERENCES_UPDATED_EVENT, refreshPreferences);
     };
   }, []);
 
-  /** Compute Today, Week, Streak */
-  const totals = useMemo(() => {
-    const now = new Date();
-    const dayStart = startOfDay(now);
-    const weekStart = startOfWeek(now);
+  const metrics = useMemo(
+    () =>
+      calculateProductivityMetrics(sessions, {
+        dailyGoal: preferences.productivity.dailyFocusGoal,
+        weeklyGoal: preferences.productivity.weeklyFocusGoal,
+      }),
+    [sessions, preferences]
+  );
 
-    let today = 0;
-    let week = 0;
-
-    // Sort most recent → oldest
-    const sorted = [...sessions].sort(
-      (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-    );
-
-    // Calculate totals
-    sorted.forEach((s) => {
-      const when = new Date(s.timestamp);
-      const mins = Number(s.duration ?? s.minutes ?? 0) || 0;
-
-      if (when >= dayStart) today += mins;
-      if (when >= weekStart) week += mins;
-    });
-
-    // Streak calculation
-    let streak = 0;
-    if (sorted.length > 0) {
-      const dateSet = new Set(
-        sorted.map((s) =>
-          new Date(s.timestamp).toISOString().slice(0, 10)
-        )
-      );
-
-      let d = startOfDay();
-      while (true) {
-        const key = d.toISOString().slice(0, 10);
-        if (dateSet.has(key)) {
-          streak++;
-          d.setDate(d.getDate() - 1);
-        } else {
-          break;
-        }
-      }
-    }
-
-    return { today, week, streak };
-  }, [sessions]);
+  const statCards = [
+    { label: "Today", value: metrics.todayMinutes, suffix: "min" },
+    { label: "This week", value: metrics.weekMinutes, suffix: "min" },
+    { label: "Sessions", value: metrics.completedSessions, suffix: "done" },
+    { label: "Streak", value: metrics.streak, suffix: "days" },
+    { label: "Average", value: metrics.averageMinutes, suffix: "min" },
+    { label: "All time", value: metrics.totalMinutes, suffix: "min" },
+  ];
 
   return (
-    <section className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-md rounded-xl p-6 shadow-lg">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-          Today's Progress
+    <section className="rounded-xl bg-white/60 p-4 shadow-lg backdrop-blur-md dark:bg-gray-800/60">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">
+          Productivity
         </h3>
-        <div className="text-sm text-gray-500">
-          {loading ? "Loading…" : "Live"}
+        <div className="text-xs text-gray-500">
+          {loading ? "Loading..." : "Live"}
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 text-center">
-        {/* Today */}
-        <div className="p-3 rounded-xl bg-white/40 dark:bg-gray-700/40">
-          <div className="text-xs text-gray-500">Today</div>
-          <div className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
-            {totals.today}
+      <div className="mb-3 space-y-2">
+        <div>
+          <div className="mb-1 flex justify-between text-xs text-gray-500 dark:text-gray-300">
+            <span>Daily goal</span>
+            <span>{metrics.dailyProgress}%</span>
           </div>
-          <div className="text-xs text-gray-500">min</div>
+          <div className="h-2 rounded-full bg-white/50 dark:bg-gray-700/50">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
+              style={{ width: `${metrics.dailyProgress}%` }}
+            />
+          </div>
         </div>
+        <div>
+          <div className="mb-1 flex justify-between text-xs text-gray-500 dark:text-gray-300">
+            <span>Weekly goal</span>
+            <span>{metrics.weeklyProgress}%</span>
+          </div>
+          <div className="h-2 rounded-full bg-white/50 dark:bg-gray-700/50">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-violet-500 to-pink-500"
+              style={{ width: `${metrics.weeklyProgress}%` }}
+            />
+          </div>
+        </div>
+      </div>
 
-        {/* This Week */}
-        <div className="p-3 rounded-xl bg-white/40 dark:bg-gray-700/40">
-          <div className="text-xs text-gray-500">This Week</div>
-          <div className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
-            {totals.week}
+      <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-3">
+        {statCards.map((card) => (
+          <div
+            key={card.label}
+            className="rounded-xl bg-white/40 p-3 dark:bg-gray-700/40"
+          >
+            <div className="text-xs text-gray-500">{card.label}</div>
+            <div className="text-xl font-semibold text-gray-800 dark:text-gray-100">
+              {card.value}
+            </div>
+            <div className="text-xs text-gray-500">{card.suffix}</div>
           </div>
-          <div className="text-xs text-gray-500">min</div>
-        </div>
-
-        {/* Streak */}
-        <div className="p-3 rounded-xl bg-white/40 dark:bg-gray-700/40">
-          <div className="text-xs text-gray-500">Streak</div>
-          <div className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
-            {totals.streak}
-          </div>
-          <div className="text-xs text-gray-500">days</div>
-        </div>
+        ))}
       </div>
     </section>
   );

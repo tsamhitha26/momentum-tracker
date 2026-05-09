@@ -142,37 +142,37 @@ export default function TaskList() {
    * UI (unchanged)
    * ------------------------------------------------------------ */
   return (
-    <section className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-lg rounded-xl p-6 shadow-xl border border-white/20">
+    <section className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-lg rounded-xl p-4 shadow-lg border border-white/20">
       {/* Header */}
-      <div className="flex justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Tasks</h2>
+      <div className="flex justify-between mb-3">
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Tasks</h2>
         <span className="text-xs text-gray-500">Profile: {user?.username || "Guest"}</span>
       </div>
 
       {/* Add Form */}
-      <form onSubmit={handleAdd} className="flex gap-2 mb-5">
+      <form onSubmit={handleAdd} className="flex gap-2 mb-4">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="flex-1 px-3 py-2 rounded-lg bg-white/40 dark:bg-gray-700/40 text-gray-800 dark:text-gray-200 outline-none"
+          className="flex-1 px-3 py-2 rounded-lg bg-white/40 dark:bg-gray-700/40 text-sm text-gray-800 dark:text-gray-200 outline-none"
           placeholder="New task..."
         />
         <input
           value={minutes}
           onChange={(e) => setMinutes(e.target.value.replace(/[^\d]/g, ""))}
-          className="w-20 px-3 py-2 rounded-lg bg-white/40 dark:bg-gray-700/40 text-gray-800 dark:text-gray-200 outline-none"
+          className="w-20 px-3 py-2 rounded-lg bg-white/40 dark:bg-gray-700/40 text-sm text-gray-800 dark:text-gray-200 outline-none"
           placeholder="min"
         />
         <button
           type="submit"
-          className="px-4 py-2 rounded-lg bg-gradient-to-br from-indigo-500 to-pink-500 text-white shadow-md hover:scale-105 transition"
+          className="px-3 py-2 rounded-lg bg-gradient-to-br from-indigo-500 to-pink-500 text-sm font-medium text-white shadow-md hover:scale-105 transition"
         >
           Add
         </button>
       </form>
 
       {/* Task List */}
-      <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+      <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
         {tasks.length === 0 ? (
           <div className="text-sm text-gray-500 dark:text-gray-300">
             No tasks yet — add one ✨
@@ -185,7 +185,7 @@ export default function TaskList() {
             return (
               <div
                 key={id}
-                className="flex items-center gap-3 bg-white/40 dark:bg-gray-700/40 px-4 py-3 rounded-xl shadow-sm border border-white/10"
+                className="flex items-center gap-3 bg-white/40 dark:bg-gray-700/40 px-3 py-2.5 rounded-xl shadow-sm border border-white/10"
               >
                 <input
                   type="checkbox"

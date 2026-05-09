@@ -1,14 +1,16 @@
 // src/api/tasks.js
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { API_BASE_URL, parseJsonResponse } from "./config";
+
+const API = API_BASE_URL;
 
 function auth() {
-  return { Authorization: `Bearer ${localStorage.getItem("authToken")}` };
+  const token = localStorage.getItem("auth_token") || localStorage.getItem("authToken");
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export async function getTasks() {
   const res = await fetch(`${API}/tasks`, { headers: auth() });
-  if (!res.ok) throw new Error("Fetch tasks failed");
-  return res.json();
+  return parseJsonResponse(res, "Fetch tasks failed");
 }
 
 export async function createTask(task) {
@@ -20,8 +22,7 @@ export async function createTask(task) {
     },
     body: JSON.stringify(task),
   });
-  if (!res.ok) throw new Error("Create task failed");
-  return res.json();
+  return parseJsonResponse(res, "Create task failed");
 }
 
 export async function updateTask(id, updates) {
@@ -33,8 +34,7 @@ export async function updateTask(id, updates) {
     },
     body: JSON.stringify(updates),
   });
-  if (!res.ok) throw new Error("Update task failed");
-  return res.json();
+  return parseJsonResponse(res, "Update task failed");
 }
 
 export async function deleteTask(id) {

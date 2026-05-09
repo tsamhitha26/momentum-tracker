@@ -1,7 +1,7 @@
 // src/api/users.js
-// Use VITE_API_URL (should include "/api" suffix in production)
-// e.g. VITE_API_URL=https://momentum-tracker-n277.onrender.com/api
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { API_BASE_URL, parseJsonResponse } from "./config";
+
+const API = API_BASE_URL;
 
 export async function register(username, password) {
   if (!username || !password) throw new Error("Username and password are required");
@@ -12,12 +12,7 @@ export async function register(username, password) {
     body: JSON.stringify({ username, password }),
   });
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || "Registration failed");
-  }
-
-  return res.json();
+  return parseJsonResponse(res, "Registration failed");
 }
 
 export async function login(username, password) {
@@ -29,12 +24,7 @@ export async function login(username, password) {
     body: JSON.stringify({ username, password }),
   });
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || "Login failed");
-  }
-
-  const data = await res.json();
+  const data = await parseJsonResponse(res, "Login failed");
   localStorage.setItem("authToken", data.token);
   localStorage.setItem("username", data.user.username);
 
@@ -49,10 +39,5 @@ export async function getProfile() {
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || "Profile fetch failed");
-  }
-
-  return res.json();
+  return parseJsonResponse(res, "Profile fetch failed");
 }

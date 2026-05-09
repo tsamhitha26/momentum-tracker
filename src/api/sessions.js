@@ -1,14 +1,16 @@
 // src/api/sessions.js
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { API_BASE_URL, parseJsonResponse } from "./config";
+
+const API = API_BASE_URL;
 
 function auth() {
-  return { Authorization: `Bearer ${localStorage.getItem("authToken")}` };
+  const token = localStorage.getItem("auth_token") || localStorage.getItem("authToken");
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export async function getSessions() {
   const res = await fetch(`${API}/sessions`, { headers: auth() });
-  if (!res.ok) throw new Error("Fetch sessions failed");
-  return res.json();
+  return parseJsonResponse(res, "Fetch sessions failed");
 }
 
 export async function createSession(session) {
@@ -20,6 +22,5 @@ export async function createSession(session) {
     },
     body: JSON.stringify(session),
   });
-  if (!res.ok) throw new Error("Create session failed");
-  return res.json();
+  return parseJsonResponse(res, "Create session failed");
 }
