@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Plus, Search, Trash2 } from "lucide-react";
 import PageShell from "../components/PageShell";
 import { getUser } from "../utils/sync";
@@ -46,6 +46,16 @@ export default function Notes() {
   function deleteNote(id) {
     persist(notes.filter((note) => note.id !== id));
   }
+
+  // Reload notes when user changes (login/logout)
+  useEffect(() => {
+    const reloadNotes = () => {
+      setNotes(loadNotes());
+    };
+
+    window.addEventListener("user-changed", reloadNotes);
+    return () => window.removeEventListener("user-changed", reloadNotes);
+  }, []);
 
   const filteredNotes = useMemo(() => {
     const needle = query.trim().toLowerCase();

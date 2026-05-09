@@ -42,6 +42,21 @@ export default function TaskList() {
     return () => window.removeEventListener("storage", handler);
   }, [STORAGE_KEY]);
 
+  // Reload tasks when user changes (login/logout)
+  useEffect(() => {
+    const reloadTasks = () => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        setTasks(raw ? JSON.parse(raw) : []);
+      } catch {
+        setTasks([]);
+      }
+    };
+
+    window.addEventListener("user-changed", reloadTasks);
+    return () => window.removeEventListener("user-changed", reloadTasks);
+  }, [STORAGE_KEY]);
+
   /** ------------------------------------------------------------
    * PERSIST LOCAL + PUSH TO SERVER
    * ------------------------------------------------------------ */
